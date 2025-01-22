@@ -12,6 +12,7 @@
                 </v-list-item-action>
             </template>
         </v-list-item>
+
         <v-list-item class="progress-bar" height="50" lines="one" align="center">
             <v-list-item-title>
                 진도율: {{ completedCount }}/{{ totalCount }} ({{ progress }}%)
@@ -20,82 +21,58 @@
     </v-list>
 </template>
 
-<script lang="ts">
-import { defineComponent, computed, ref, onMounted } from 'vue';
-import { fetchTodos, updateTodo, deleteTodo } from '@/services/api';
+<script setup lang="ts">
+import { computed } from 'vue';
+import { updateTodo, deleteTodo } from '../services/api';
 import type { TodoType } from '../interfaces/Todod';
-import type { PropType } from 'vue';
+import { defineProps, defineEmits } from 'vue';
 
-export default defineComponent({
-    props: {
-        filteredTodoList: {
-            type: Array as PropType<TodoType[]>,
-            required: true,
-        },
+// Props 정의
+const props = defineProps({
+    filteredTodoList: {
+        type: Array as () => TodoType[],
+        required: true,
     },
-    setup(_, context) {
-        const todos = ref<TodoType[]>([]);
+});
 
-        // 완료-미완료 토글 메서드
-        const toggleComplete = async (item: TodoType) => {
-            item.completed = !item.completed;
-            try {
-                await updateTodo(item.id, item); // API 호출
-                context.emit('updateTodo', item); // 상위 컴포넌트에 변경 사항 전달
-            } catch (error) {
-                console.error('Failed to update todo:', error);
-            }
-        };
+// Emits 정의
+const emit = defineEmits(["updateTodo", "handleDelete"]);
 
-        // 항목 삭제 메서드
-        const handleDelete = async (targetId: number, targetTitle: string) => {
-            try {
-                await deleteTodo(targetId); // API 호출
-                context.emit('handleDelete', targetId, targetTitle);
-            } catch (error) {
-                console.error('Failed to delete todo:', error);
-            }
-        };
+// 완료-미완료 토글 메서드
+const toggleComplete = async (item: TodoType) => {
+    item.completed = !item.completed;
+    try {
+        await updateTodo(item.id, item);
+        emit('updateTodo', item);
+    } catch (error) {
+        console.error('### 토글 기능 에러 ###', error);
+    }
+};
 
-        // Todos 데이터 불러오기
-        const loadTodos = async () => {
-            try {
-                const response = await fetchTodos(); // API 호출
-                todos.value = response.data;
-            } catch (error) {
-                console.error('Failed to fetch todos:', error);
-            }
-        };
+// 항목 삭제 메서드
+const handleDelete = async (targetId: number, targetTitle: string) => {
+    try {
+        await deleteTodo(targetId);
+        emit('handleDelete', targetId, targetTitle);
+    } catch (error) {
+        console.error('### 삭제 기능 에러 ###', error);
+    }
+};
 
-        // 완료된 항목 개수 계산
-        const completedCount = computed(() =>
-            todos.value.filter(item => item.completed).length
-        );
+// 완료된 항목 개수 계산
+const completedCount = computed(() => {
+    return props.filteredTodoList.filter((item: TodoType) => item.completed).length;
+});
 
-        // 총 항목 개수 계산
-        const totalCount = computed(() => todos.value.length);
+// 총 항목 개수 계산
+const totalCount = computed(() => {
+    return props.filteredTodoList.length;
+});
 
-        // 진도율 계산
-        const progress = computed(() => {
-            if (totalCount.value === 0) return 0;
-            return Math.round((completedCount.value / totalCount.value) * 100);
-        });
-
-        // 컴포넌트가 마운트되면 Todos 데이터 로드
-        onMounted(() => {
-            loadTodos();
-        });
-
-        return {
-            todos,
-            toggleComplete,
-            handleDelete,
-            completedCount,
-            totalCount,
-            progress,
-            loadTodos,
-        };
-    },
+// 진도율 계산
+const progress = computed(() => {
+    if (totalCount.value === 0) return 0;
+    return Math.round((completedCount.value / totalCount.value) * 100);
 });
 </script>
 

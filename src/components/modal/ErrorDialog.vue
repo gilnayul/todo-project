@@ -1,5 +1,5 @@
 <template>
-    <!-- v-dialog:  모달 창 구현 컴포넌트 -->
+    <!-- v-dialog: 모달 창 구현 컴포넌트 -->
     <v-dialog v-model="showErrorDialog" max-width="600">
         <v-card>
             <v-card-title class="headline">{{ cardTitle }}</v-card-title>
@@ -15,38 +15,28 @@
     </v-dialog>
 </template>
 
-<script lang="ts">
-import { defineComponent, ref } from 'vue'
+<script setup lang="ts">
+import { ref } from 'vue';
 
-export default defineComponent({
-    name: 'ConfirmErrorTodo',
-    props: {
-        cardTitle: {
-            type: String,
-            default: ''
-        },
-        cardText: {
-            type: String,
-            default: ''
-        }
-    },
-    setup(_, context) {
-        const showErrorDialog = ref(true)
+// Props 정의
+const { cardTitle, cardText } = defineProps<{
+    cardTitle: string;
+    cardText: string;
+}>();
 
-        const cancel = () => {
-            context.emit('cancel')
-        }
+// Emits 정의
+const emit = defineEmits<{
+    (event: 'cancel'): void;
+    (event: 'confirmErrorTodo'): void;
+}>();
 
-        const confirmErrorTodo = () => {
-            context.emit('confirmErrorTodo')
-        }
-        return {
-            showErrorDialog,
-            cancel,
-            confirmErrorTodo
-        }
-    }
-})
+// 로컬 상태
+const showErrorDialog = ref(true);
+
+// 확인 버튼 클릭 핸들러
+const confirmErrorTodo = () => {
+    emit('confirmErrorTodo');
+};
 </script>
 
 <style scoped></style>

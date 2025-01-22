@@ -1,18 +1,10 @@
-
-
 import { createApp } from 'vue'
 import App from './App.vue'
-// import 'vuetify/styles'
-// import '@mdi/font/css/materialdesignicons.css'
-import { createVuetify } from 'vuetify'
-import * as components from 'vuetify/components'
-import * as directives from 'vuetify/directives'
-// import './assets/main.css'
+import vuetify from './plugins/vuetify'
+import { loadFonts } from './plugins/webfontloader'
 
-const vuetify = createVuetify({
-  components,
-  directives
-})
+loadFonts()
 
-createApp(App).use(vuetify).mount('#app')
-
+createApp(App)
+  .use(vuetify)
+  .mount('#app')

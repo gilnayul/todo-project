@@ -1,5 +1,5 @@
 <template>
-    <!-- v-dialog:  모달 창 구현 컴포넌트 -->
+    <!-- v-dialog: 모달 창 구현 컴포넌트 -->
     <v-dialog v-model="showDeleteDialog" max-width="600">
         <v-card>
             <v-card-title class="headline">{{ cardTitle }}</v-card-title>
@@ -16,38 +16,33 @@
     </v-dialog>
 </template>
 
-<script lang="ts">
-import { defineComponent, ref } from 'vue'
+<script setup lang="ts">
+import { ref } from 'vue';
 
-export default defineComponent({
-    name: 'ConfirmDeleteTodo',
-    props: {
-        cardTitle: {
-            type: String,
-            default: ''
-        },
-        cardText: {
-            type: String,
-            default: ''
-        }
-    },
-    setup(_, context) {
-        const showDeleteDialog = ref(true)
+// Props 정의
+const { cardTitle, cardText } = defineProps<{
+    cardTitle: string;
+    cardText: string;
+}>();
 
-        const cancel = () => {
-            context.emit('cancel')
-        }
+// Emits 정의
+const emit = defineEmits<{
+    (event: 'cancel'): void;
+    (event: 'confirmDeleteTodo'): void;
+}>();
 
-        const confirmDeleteTodo = () => {
-            context.emit('confirmDeleteTodo')
-        }
-        return {
-            showDeleteDialog,
-            cancel,
-            confirmDeleteTodo
-        }
-    }
-})
+// 로컬 상태
+const showDeleteDialog = ref(true);
+
+// 취소 버튼 클릭 핸들러
+const cancel = () => {
+    emit('cancel');
+};
+
+// 삭제 버튼 클릭 핸들러
+const confirmDeleteTodo = () => {
+    emit('confirmDeleteTodo');
+};
 </script>
 
 <style scoped></style>
