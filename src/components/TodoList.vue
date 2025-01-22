@@ -1,29 +1,17 @@
 <template>
     <v-list>
-        <!-- lines="two" : 텍스트 최대 2줄까지 표시 / mb(margin-bottom) : 외부 하단 여백 / 
-             border : 각 리스트 테두리 / filteredTodoList : 상위 컴포넌트에서 props로 받은 요소를  -->
         <v-list-item class="mb-6" border height="60" lines="two" rounded v-for="item in filteredTodoList"
             :key="item.id">
-            <!-- 동적 클래스 바인딩 : { 클래스 이름: 조건 }-->
             <v-list-item-title :class="{ completed: item.completed }">
-                <!-- 객체여서 item.title -->
                 {{ item.title }}
             </v-list-item-title>
-
-            <!-- v-slot:append: 리스트 항목 오른쪽 액션 아이콘 추가 -->
             <template v-slot:append>
-
-                <!-- v-list-item-action: 액션 아이콘(버튼 등)을 포함하는 Vuetify 컴포넌트-->
                 <v-list-item-action>
-                    <!-- 상태 토글을 위한 아이콘 -->
                     <v-icon @click="toggleComplete(item)">mdi-check-circle</v-icon>
                     <v-icon @click="handleDelete(item.id, item.title)">mdi-delete</v-icon>
                 </v-list-item-action>
             </template>
-
         </v-list-item>
-
-        <!-- 진도율 표시 -->
         <v-list-item class="progress-bar" height="50" lines="one" align="center">
             <v-list-item-title>
                 진도율: {{ completedCount }}/{{ totalCount }} ({{ progress }}%)
@@ -33,45 +21,59 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, computed } from 'vue';
-
+import { defineComponent, computed, ref, onMounted } from 'vue';
+import { fetchTodos, updateTodo, deleteTodo } from '@/services/api';
 import type { TodoType } from '../interfaces/Todod';
-import type { PropType } from 'vue';    // props 타입 지정
+import type { PropType } from 'vue';
 
 export default defineComponent({
-
     props: {
         filteredTodoList: {
-
-            // filteredTodoList 각 요소가 TodoType 객체임을 정의
-            // PropType<> : 배열 요소 타입 지정 
             type: Array as PropType<TodoType[]>,
-            required: true,     // prop 필수 설정
+            required: true,
         },
     },
-
-    setup(props, context) {
-
-
+    setup(_, context) {
+        const todos = ref<TodoType[]>([]);
 
         // 완료-미완료 토글 메서드
-        const toggleComplete = (item: TodoType) => {
+        const toggleComplete = async (item: TodoType) => {
             item.completed = !item.completed;
-            context.emit('updateTodo', item); // 상위 컴포넌트에 변경 사항 전달
+            try {
+                await updateTodo(item.id, item); // API 호출
+                context.emit('updateTodo', item); // 상위 컴포넌트에 변경 사항 전달
+            } catch (error) {
+                console.error('Failed to update todo:', error);
+            }
         };
 
         // 항목 삭제 메서드
-        const handleDelete = (targetId: number, targetTitle: string) => {
-            context.emit('handleDelete', targetId, targetTitle);
+        const handleDelete = async (targetId: number, targetTitle: string) => {
+            try {
+                await deleteTodo(targetId); // API 호출
+                context.emit('handleDelete', targetId, targetTitle);
+            } catch (error) {
+                console.error('Failed to delete todo:', error);
+            }
+        };
+
+        // Todos 데이터 불러오기
+        const loadTodos = async () => {
+            try {
+                const response = await fetchTodos(); // API 호출
+                todos.value = response.data;
+            } catch (error) {
+                console.error('Failed to fetch todos:', error);
+            }
         };
 
         // 완료된 항목 개수 계산
         const completedCount = computed(() =>
-            props.filteredTodoList.filter(item => item.completed).length
+            todos.value.filter(item => item.completed).length
         );
 
         // 총 항목 개수 계산
-        const totalCount = computed(() => props.filteredTodoList.length);
+        const totalCount = computed(() => todos.value.length);
 
         // 진도율 계산
         const progress = computed(() => {
@@ -79,12 +81,19 @@ export default defineComponent({
             return Math.round((completedCount.value / totalCount.value) * 100);
         });
 
+        // 컴포넌트가 마운트되면 Todos 데이터 로드
+        onMounted(() => {
+            loadTodos();
+        });
+
         return {
+            todos,
             toggleComplete,
             handleDelete,
             completedCount,
             totalCount,
             progress,
+            loadTodos,
         };
     },
 });
