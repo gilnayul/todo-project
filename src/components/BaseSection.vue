@@ -29,22 +29,22 @@ import SearchTodo from './SearchTodo.vue';
 import TodoList from './TodoList.vue';
 import ConfirmDialog from './modal/ConfirmDialog.vue';
 import type { TodoType } from '../interfaces/Todod';
+import { fetchTodos, createTodo, updateTodo, deleteTodo } from '../services/api';
 
-// const title = ref('');
 const todoKeyword = ref('');
 const cardText = ref('');
 const cardToDeleteId = ref(0);
 const showDeleteDialog = ref(false);
 const todoList = ref<TodoType[]>([]);
 
-const loadTodosFromStorage = () => {
-    const storedTodos = Object.keys(localStorage).map((key) => {
-        const todo = localStorage.getItem(key);
-        return todo ? JSON.parse(todo) : null;
-    })
-        .filter(Boolean)
-        .sort((a: TodoType, b: TodoType) => a.id - b.id);
-    todoList.value = storedTodos;
+const loadTodosFromStorage = async () => {
+    try {
+        const response = await fetchTodos();
+        todoList.value = response.data.sort((a: TodoType, b: TodoType) => a.id - b.id);
+
+    } catch (error) {
+        console.error('Failed to load todos:', error);
+    }
 };
 
 onMounted(() => {
@@ -56,21 +56,28 @@ const filteredTodo = computed(() => {
     return keyword ? todoList.value.filter(item => item.title.toLowerCase().includes(keyword)) : todoList.value;
 });
 
-const addSubmit = (newTodo: TodoType) => {
+const addSubmit = async (newTodo: TodoType) => {
     const isDuplicate = todoList.value.some(todo => todo.title === newTodo.title);
     if (isDuplicate) {
         alert('이미 존재하는 Todo입니다!');
         return;
     }
-    const maxId = todoList.value.length > 0 ? Math.max(...todoList.value.map(todo => todo.id)) : -1;
-    const newTodoWithId = { ...newTodo, id: maxId + 1 };
-    todoList.value.push(newTodoWithId);
-    localStorage.setItem(newTodoWithId.id.toString(), JSON.stringify(newTodoWithId));
+    try {
+        const response = await createTodo({ text: newTodo.title });
+        todoList.value.push(response.data);
+    } catch (error) {
+        console.error('Failed to add todo:', error);
+    }
 };
 
-const handleUpdateTodo = (updatedItem: TodoType) => {
-    const index = todoList.value.findIndex((todo) => todo.id === updatedItem.id);
-    todoList.value[index] = updatedItem;
+const handleUpdateTodo = async (updatedItem: TodoType) => {
+    try {
+        const response = await updateTodo(updatedItem);
+        const index = todoList.value.findIndex((todo) => todo.id === updatedItem.id);
+        todoList.value[index] = response.data;
+    } catch (error) {
+        console.error('Failed to update todo:', error);
+    }
 };
 
 const handleDelete = (targetId: number, targetTitle: string) => {
@@ -83,11 +90,17 @@ const cancel = () => {
     showDeleteDialog.value = false;
 };
 
-const confirmDeleteTodo = (targetId: number) => {
-    todoList.value = todoList.value.filter((todo) => todo.id !== targetId);
-    localStorage.removeItem(targetId.toString());
-    showDeleteDialog.value = false;
+const confirmDeleteTodo = async (targetId: number) => {
+    try {
+        await deleteTodo(targetId);
+        todoList.value = todoList.value.filter((todo) => todo.id !== targetId);
+        showDeleteDialog.value = false;
+    } catch (error) {
+        console.error('Failed to delete todo:', error);
+    }
 };
 </script>
+
+
 
 <style></style>

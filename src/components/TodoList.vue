@@ -42,7 +42,7 @@ const emit = defineEmits(["updateTodo", "handleDelete"]);
 const toggleComplete = async (item: TodoType) => {
     item.completed = !item.completed;
     try {
-        await updateTodo(item.id, item);
+        await updateTodo(item);
         emit('updateTodo', item);
     } catch (error) {
         console.error('### 토글 기능 에러 ###', error);
