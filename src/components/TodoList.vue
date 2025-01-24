@@ -26,6 +26,7 @@ import { computed } from 'vue';
 import { updateTodo, deleteTodo } from '../services/api';
 import type { TodoType } from '../interfaces/Todod';
 import { defineProps, defineEmits } from 'vue';
+import { watch } from 'vue';
 
 // Props 정의
 const props = defineProps({
@@ -39,20 +40,34 @@ const props = defineProps({
 const emit = defineEmits(["updateTodo", "handleDelete"]);
 
 // 완료-미완료 토글 메서드
+// async : 비동기 함수 - promise 반환
+// promise : 비동기 작업 성공 / 실패 관리하는 객체
+
 const toggleComplete = async (item: TodoType) => {
     item.completed = !item.completed;
     try {
-        await updateTodo(item);
-        emit('updateTodo', item);
+        const updatedItem = await updateTodo(item); // 서버에서 업데이트된 데이터 반환
+        emit('updateTodo', updatedItem); // 부모 컴포넌트에 업데이트된 데이터를 전달
     } catch (error) {
         console.error('### 토글 기능 에러 ###', error);
     }
 };
 
+
+// const toggleComplete = async (item: TodoType) => {
+//     item.completed = !item.completed;
+//     try {
+//         await updateTodo(item);     // await : promise가 해결될 때까지 기다리는 키워드
+//         emit('updateTodo', item);
+//     } catch (error) {
+//         console.error('### 토글 기능 에러 ###', error);
+//     }
+// };
+
 // 항목 삭제 메서드
 const handleDelete = async (targetId: number, targetTitle: string) => {
     try {
-        await deleteTodo(targetId);
+        await deleteTodo(targetId);    // API 호출
         emit('handleDelete', targetId, targetTitle);
     } catch (error) {
         console.error('### 삭제 기능 에러 ###', error);
@@ -74,6 +89,16 @@ const progress = computed(() => {
     if (totalCount.value === 0) return 0;
     return Math.round((completedCount.value / totalCount.value) * 100);
 });
+
+
+watch(
+    () => props.filteredTodoList,
+    (newList) => {
+        console.log('Filtered Todo List changed:', newList);
+    },
+    { deep: true }
+);
+
 </script>
 
 <style scoped>

@@ -29,7 +29,8 @@ import SearchTodo from './SearchTodo.vue';
 import TodoList from './TodoList.vue';
 import ConfirmDialog from './modal/ConfirmDialog.vue';
 import type { TodoType } from '../interfaces/Todod';
-import { fetchTodos, createTodo, updateTodo, deleteTodo } from '../services/api';
+import { fetchTodos, updateTodo, deleteTodo } from '../services/api';
+import axios from 'axios';
 
 const todoKeyword = ref('');
 const cardText = ref('');
@@ -41,7 +42,6 @@ const loadTodosFromStorage = async () => {
     try {
         const response = await fetchTodos();
         todoList.value = response.data.sort((a: TodoType, b: TodoType) => a.id - b.id);
-
     } catch (error) {
         console.error('Failed to load todos:', error);
     }
@@ -56,25 +56,36 @@ const filteredTodo = computed(() => {
     return keyword ? todoList.value.filter(item => item.title.toLowerCase().includes(keyword)) : todoList.value;
 });
 
-const addSubmit = async (newTodo: TodoType) => {
-    const isDuplicate = todoList.value.some(todo => todo.title === newTodo.title);
-    if (isDuplicate) {
-        alert('이미 존재하는 Todo입니다!');
+// AddTodo에서 전달된 데이터를 처리하는 함수
+const addSubmit = async (title: string) => {
+    console.log('addSubmit 호출:', title); // 디버깅용 로그
+    if (!title) {
+        alert('Title is empty');
         return;
     }
     try {
-        const response = await createTodo({ text: newTodo.title });
-        todoList.value.push(response.data);
+        const response = await axios.post<TodoType>('/api/todos', {
+            title: title,
+            completed: false,
+        });
+        console.log('응답:', response.data);
+        // 새 객체를 할당하여 반응성 트리거
+        todoList.value = [...todoList.value, response.data];
     } catch (error) {
-        console.error('Failed to add todo:', error);
+        console.error('Error adding todo:', error);
     }
+    loadTodosFromStorage()
 };
 
 const handleUpdateTodo = async (updatedItem: TodoType) => {
     try {
         const response = await updateTodo(updatedItem);
         const index = todoList.value.findIndex((todo) => todo.id === updatedItem.id);
-        todoList.value[index] = response.data;
+        if (index !== -1) {
+            const newList = [...todoList.value];
+            newList[index] = response;
+            todoList.value = newList;
+        }
     } catch (error) {
         console.error('Failed to update todo:', error);
     }
@@ -100,7 +111,5 @@ const confirmDeleteTodo = async (targetId: number) => {
     }
 };
 </script>
-
-
 
 <style></style>

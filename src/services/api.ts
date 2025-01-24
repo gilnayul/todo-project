@@ -10,20 +10,22 @@ const apiClient = axios.create({
 
 // Fetch all todos
 export const fetchTodos = async (): Promise<{ data: TodoType[] }> => {
-    return await apiClient.get('/todos');
+    return await apiClient.get('/api/todos');
 };
 
 // Create a new todo
 export const createTodo = async (todo: { text: string }): Promise<{ data: TodoType }> => {
-    return await apiClient.post('/todos', todo);
+    return await apiClient.post('/api/todos', todo);
 };
 
 // Update a todo
-export const updateTodo = async (todo: TodoType): Promise<{ data: TodoType }> => {
-    return await apiClient.put(`/todos/${todo.id}`, todo);
+export const updateTodo = async (todo: TodoType): Promise<TodoType> => {
+    const response = await axios.put<TodoType>(`/api/todos`, todo);
+    return response.data;
+    // return await apiClient.put(`/api/todos/${todo.id}`, todo);
 };
 
 // Delete a todo
 export const deleteTodo = async (id: number): Promise<void> => {
-    await apiClient.delete(`/todos/${id}`);
+    await apiClient.delete(`/api/todos/${id}`);
 };
