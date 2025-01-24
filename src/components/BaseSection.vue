@@ -1,4 +1,4 @@
-<template>
+<!-- <template>
     <v-app>
         <v-main>
             <v-container class="mt-12">
@@ -38,69 +38,83 @@ const cardToDeleteId = ref(0);
 const showDeleteDialog = ref(false);
 const todoList = ref<TodoType[]>([]);
 
+// 네트워크에서 Todo 리스트 로드
 const loadTodosFromStorage = async () => {
     try {
         const response = await fetchTodos();
-        todoList.value = response.data.sort((a: TodoType, b: TodoType) => a.id - b.id);
+        todoList.value = response.data.map((item: TodoType) => ({
+            ...item,
+            isEditing: false,
+            newTitle: '',
+        }));
     } catch (error) {
         console.error('Failed to load todos:', error);
     }
 };
 
+
+// 컴포넌트 마운트 시 데이터 로드
 onMounted(() => {
     loadTodosFromStorage();
 });
 
+// 필터링된 Todo 리스트 계산
 const filteredTodo = computed(() => {
     const keyword = todoKeyword.value.trim().toLowerCase();
-    return keyword ? todoList.value.filter(item => item.title.toLowerCase().includes(keyword)) : todoList.value;
+    return keyword
+        ? todoList.value.filter((item) => item.title.toLowerCase().includes(keyword))
+        : todoList.value;
 });
 
-// AddTodo에서 전달된 데이터를 처리하는 함수
+// AddTodo에서 전달된 데이터를 처리
 const addSubmit = async (title: string) => {
-    console.log('addSubmit 호출:', title); // 디버깅용 로그
-    if (!title) {
+    if (!title.trim()) {
         alert('Title is empty');
         return;
     }
     try {
         const response = await axios.post<TodoType>('/api/todos', {
-            title: title,
+            title,
             completed: false,
         });
-        console.log('응답:', response.data);
-        // 새 객체를 할당하여 반응성 트리거
-        todoList.value = [...todoList.value, response.data];
+        todoList.value.push({
+            ...response.data,
+            isEditing: false,
+            newTitle: '',
+        });
     } catch (error) {
         console.error('Error adding todo:', error);
     }
-    loadTodosFromStorage()
+    loadTodosFromStorage();
 };
 
+
+// Todo 업데이트 처리
 const handleUpdateTodo = async (updatedItem: TodoType) => {
     try {
         const response = await updateTodo(updatedItem);
         const index = todoList.value.findIndex((todo) => todo.id === updatedItem.id);
         if (index !== -1) {
-            const newList = [...todoList.value];
-            newList[index] = response;
-            todoList.value = newList;
+            todoList.value[index] = response; // 업데이트된 Todo 반영
         }
     } catch (error) {
         console.error('Failed to update todo:', error);
     }
 };
 
+// Todo 삭제 다이얼로그 표시
 const handleDelete = (targetId: number, targetTitle: string) => {
     cardText.value = targetTitle;
     cardToDeleteId.value = targetId;
     showDeleteDialog.value = true;
 };
 
+// 삭제 다이얼로그 취소
 const cancel = () => {
     showDeleteDialog.value = false;
 };
 
+// Todo 삭제 처리
 const confirmDeleteTodo = async (targetId: number) => {
     try {
         await deleteTodo(targetId);
@@ -110,6 +124,4 @@ const confirmDeleteTodo = async (targetId: number) => {
         console.error('Failed to delete todo:', error);
     }
 };
-</script>
-
-<style></style>
+</script> -->

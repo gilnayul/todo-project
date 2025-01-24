@@ -44,14 +44,27 @@ const emit = defineEmits(["updateTodo", "handleDelete"]);
 // promise : 비동기 작업 성공 / 실패 관리하는 객체
 
 const toggleComplete = async (item: TodoType) => {
-    item.completed = !item.completed;
+    const originalCompleted = item.completed; // 기존 상태 저장
     try {
-        const updatedItem = await updateTodo(item); // 서버에서 업데이트된 데이터 반환
-        emit('updateTodo', updatedItem); // 부모 컴포넌트에 업데이트된 데이터를 전달
+        const updatedItem = await updateTodo({ ...item, completed: !item.completed }); // API 호출
+        emit('updateTodo', updatedItem); // 업데이트된 데이터 전달
     } catch (error) {
         console.error('### 토글 기능 에러 ###', error);
+        item.completed = originalCompleted; // 실패 시 상태 복원
     }
 };
+
+
+
+// const toggleComplete = async (item: TodoType) => {
+//     item.completed = !item.completed;
+//     try {
+//         const updatedItem = await updateTodo(item); // 서버에서 업데이트된 데이터 반환
+//         emit('updateTodo', updatedItem); // 부모 컴포넌트에 업데이트된 데이터를 전달
+//     } catch (error) {
+//         console.error('### 토글 기능 에러 ###', error);
+//     }
+// };
 
 
 // const toggleComplete = async (item: TodoType) => {
@@ -85,19 +98,17 @@ const totalCount = computed(() => {
 });
 
 // 진도율 계산
-const progress = computed(() => {
-    if (totalCount.value === 0) return 0;
-    return Math.round((completedCount.value / totalCount.value) * 100);
-});
+const progress = computed(() => totalCount.value ? Math.round((completedCount.value / totalCount.value) * 100) : 0);
+
 
 
 watch(
-    () => props.filteredTodoList,
-    (newList) => {
-        console.log('Filtered Todo List changed:', newList);
-    },
-    { deep: true }
+    () => props.filteredTodoList.map((item) => item.completed), // 필요한 속성만 감시
+    (newCompletedStates) => {
+        console.log('Completed states changed:', newCompletedStates);
+    }
 );
+
 
 </script>
 
