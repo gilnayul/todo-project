@@ -1,16 +1,16 @@
 <template>
-  <v-app>
+  <v-app :style="backgroundStyle">
     <v-main class="no-scrollbar">
       <v-container class="mt-12">
         <v-row justify="center">
           <v-col cols="12" sm="8" md="6">
-            <h1 class="text-center">Todo List</h1>
+            <h1 class="text-center" :style="titleStyle">Todo List</h1>
             <v-card class="pa-10">
               <v-form>
                 <AddTodo @handleSubmit="addSubmit" />
                 <SearchTodo v-model:searchKeyword="todoKeyword" />
-                <TodoList :filteredTodoList="filteredTodo" @updateTodo="handleUpdateTodo"
-                  @handleDelete="handleDelete" />
+                <TodoList :filteredTodoList="filteredTodo" @updateTodo="handleUpdateTodo" @handleDelete="handleDelete"
+                  @updateProgress="updateProgress" />
               </v-form>
             </v-card>
           </v-col>
@@ -37,6 +37,29 @@ const cardText = ref('');
 const cardToDeleteId = ref(0);
 const showDeleteDialog = ref(false);
 const todoList = ref<TodoType[]>([]);
+const progress = ref(0);
+
+const updateProgress = (newProgress: number) => {
+  progress.value = newProgress;
+}
+
+const backgroundStyle = computed(() => {
+  const alpha = progress.value / 100;
+  return {
+    backgroundColor: `rgba(0, 0, 0, ${alpha})`, // ✅ 배경색 투명도 적용
+    transition: "background-color 0.5s ease-in-out",
+    minHeight: "100vh",
+  };
+});
+
+// ✅ h1 글씨 색상 변경 적용 (점점 흰색)
+const titleStyle = computed(() => {
+  const brightness = Math.round((progress.value / 100) * 255); // ✅ 0% = 검정(0), 100% = 흰색(255)
+  return {
+    color: `rgb(${brightness}, ${brightness}, ${brightness})`, // ✅ 진도율이 증가할수록 흰색으로 변화
+    transition: "color 0.5s ease-in-out",
+  };
+});
 
 // 네트워크에서 Todo 리스트 로드
 const loadTodosFromStorage = async () => {

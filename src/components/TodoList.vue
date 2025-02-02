@@ -44,7 +44,7 @@ const props = defineProps({
 });
 
 // Emits 정의
-const emit = defineEmits(["updateTodo", "handleDelete"]);
+const emit = defineEmits(["updateTodo", "handleDelete", "updateProgress"]);
 
 // 수정 시작 함수
 const startEditing = (item: TodoType) => {
@@ -108,11 +108,13 @@ const totalCount = computed(() => {
 // 진도율 계산
 const progress = computed(() => totalCount.value ? Math.round((completedCount.value / totalCount.value) * 100) : 0);
 
-const completedStates = computed(() => props.filteredTodoList.map((item) => item.completed));
+// const completedStates = computed(() => props.filteredTodoList.map((item) => item.completed));
 
-watch(completedStates, (newCompletedStates: boolean[]) => {
-    console.log('Completed states changed:', newCompletedStates);
+watch(progress, (newProgress) => {
+    emit("updateProgress", newProgress);
 });
+
+
 
 
 </script>
