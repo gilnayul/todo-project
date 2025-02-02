@@ -2,11 +2,18 @@
     <v-list>
         <v-list-item class="mb-6" border height="60" lines="two" rounded v-for="item in filteredTodoList"
             :key="item.id">
-            <v-list-item-title :class="{ completed: item.completed }">
-                {{ item.title }}
-            </v-list-item-title>
-            <template v-slot:append>
-                <v-list-item-action>
+            <!-- 수정 모드 -->
+            <template v-if="item.isEditing">
+                <input type="text" :value="item.title" @blur="cancelEdit(item)" @keydown.enter="saveEdit(item, $event)"
+                    class="edit-input center-aligned" />
+            </template>
+
+            <!-- 일반 모드 -->
+            <template v-else>
+                <v-list-item-title :class="{ completed: item.completed }" @dblclick="startEditing(item)">
+                    {{ item.title }}
+                </v-list-item-title>
+                <v-list-item-action append class="d-flex justify-end">
                     <v-icon @click="toggleComplete(item)">mdi-check-circle</v-icon>
                     <v-icon @click="handleDelete(item.id, item.title)">mdi-delete</v-icon>
                 </v-list-item-action>
@@ -39,10 +46,34 @@ const props = defineProps({
 // Emits 정의
 const emit = defineEmits(["updateTodo", "handleDelete"]);
 
-// 완료-미완료 토글 메서드
-// async : 비동기 함수 - promise 반환
-// promise : 비동기 작업 성공 / 실패 관리하는 객체
+// 수정 시작 함수
+const startEditing = (item: TodoType) => {
+    item.isEditing = true;
+};
 
+// 수정 저장 함수
+const saveEdit = async (item: TodoType, event: KeyboardEvent) => {
+    const target = event.target as HTMLInputElement;
+    const updatedTitle = target.value.trim();
+
+    if (updatedTitle && updatedTitle !== item.title) {
+        try {
+            const updatedItem = await updateTodo({ ...item, title: updatedTitle });
+            emit("updateTodo", updatedItem);    // 부모 컴포넌트에 업데이트된 데이터 전달
+        } catch (error) {
+            console.log("### 수정 기능 에러 ###", error);
+        }
+    }
+
+    item.isEditing = false;
+};
+
+// 수정 취소 함수
+const cancelEdit = (item: TodoType) => {
+    item.isEditing = false;
+};
+
+// 완료-미완료 토글 메서드
 const toggleComplete = async (item: TodoType) => {
     const originalCompleted = item.completed; // 기존 상태 저장
     try {
@@ -53,29 +84,6 @@ const toggleComplete = async (item: TodoType) => {
         item.completed = originalCompleted; // 실패 시 상태 복원
     }
 };
-
-
-
-// const toggleComplete = async (item: TodoType) => {
-//     item.completed = !item.completed;
-//     try {
-//         const updatedItem = await updateTodo(item); // 서버에서 업데이트된 데이터 반환
-//         emit('updateTodo', updatedItem); // 부모 컴포넌트에 업데이트된 데이터를 전달
-//     } catch (error) {
-//         console.error('### 토글 기능 에러 ###', error);
-//     }
-// };
-
-
-// const toggleComplete = async (item: TodoType) => {
-//     item.completed = !item.completed;
-//     try {
-//         await updateTodo(item);     // await : promise가 해결될 때까지 기다리는 키워드
-//         emit('updateTodo', item);
-//     } catch (error) {
-//         console.error('### 토글 기능 에러 ###', error);
-//     }
-// };
 
 // 항목 삭제 메서드
 const handleDelete = async (targetId: number, targetTitle: string) => {
@@ -100,14 +108,11 @@ const totalCount = computed(() => {
 // 진도율 계산
 const progress = computed(() => totalCount.value ? Math.round((completedCount.value / totalCount.value) * 100) : 0);
 
+const completedStates = computed(() => props.filteredTodoList.map((item) => item.completed));
 
-
-watch(
-    () => props.filteredTodoList.map((item) => item.completed), // 필요한 속성만 감시
-    (newCompletedStates) => {
-        console.log('Completed states changed:', newCompletedStates);
-    }
-);
+watch(completedStates, (newCompletedStates: boolean[]) => {
+    console.log('Completed states changed:', newCompletedStates);
+});
 
 
 </script>
@@ -122,5 +127,22 @@ watch(
     font-weight: bold;
     text-align: center;
     margin-top: 10px;
+}
+
+.edit-input {
+    width: 80%;
+    padding: 4px;
+    font-size: 16px;
+    border: none;
+    outline: none;
+    text-align: center;
+    margin: 0 auto;
+    display: block;
+}
+
+.center-aligned {
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 </style>

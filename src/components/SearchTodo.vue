@@ -10,7 +10,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, defineProps, defineEmits, computed } from 'vue';
 
 // Props 정의
 const props = defineProps<{
@@ -25,10 +25,12 @@ const emit = defineEmits<{
 // 로컬 상태
 const localSearchKeyword = ref(props.searchKeyword);
 
-// Props 변경 감지
-watch(() => props.searchKeyword, (newValue) => {
+const searchKeywordComputed = computed(() => props.searchKeyword);
+
+watch(searchKeywordComputed, (newValue: string) => {
     localSearchKeyword.value = newValue;
 });
+
 
 // 입력 이벤트 핸들러
 const onInput = () => {

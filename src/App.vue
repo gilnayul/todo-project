@@ -22,7 +22,6 @@
   </v-app>
 </template>
 
-
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import AddTodo from '../src/components/AddTodo.vue';
@@ -43,16 +42,21 @@ const todoList = ref<TodoType[]>([]);
 const loadTodosFromStorage = async () => {
   try {
     const response = await fetchTodos();
-    todoList.value = response.data.map((item: TodoType) => ({
-      ...item,
-      isEditing: false,
-      newTitle: '',
-    }));
+    if (Array.isArray(response)) { // ✅ `fetchTodos()`의 응답이 `TodoType[]`이므로 `.data` 제거
+      todoList.value = response.map((item: TodoType) => ({ // ✅ item의 타입 명시
+        ...item,
+        isEditing: false,
+        newTitle: '',
+      }));
+    } else {
+      console.error("### Invalid response format ###", response);
+      todoList.value = [];
+    }
   } catch (error) {
     console.error('Failed to load todos:', error);
+    todoList.value = [];
   }
 };
-
 
 // 컴포넌트 마운트 시 데이터 로드
 onMounted(() => {
@@ -63,7 +67,7 @@ onMounted(() => {
 const filteredTodo = computed(() => {
   const keyword = todoKeyword.value.trim().toLowerCase();
   return keyword
-    ? todoList.value.filter((item) => item.title.toLowerCase().includes(keyword))
+    ? todoList.value.filter((item: TodoType) => item.title.toLowerCase().includes(keyword)) // ✅ item의 타입 명시
     : todoList.value;
 });
 
@@ -89,14 +93,13 @@ const addSubmit = async (title: string) => {
   loadTodosFromStorage();
 };
 
-
 // Todo 업데이트 처리
 const handleUpdateTodo = async (updatedItem: TodoType) => {
   try {
     const response = await updateTodo(updatedItem);
-    const index = todoList.value.findIndex((todo) => todo.id === updatedItem.id);
-    if (index !== -1) {
-      todoList.value[index] = response; // 업데이트된 Todo 반영
+    const index = todoList.value.findIndex((todo: TodoType) => todo.id === updatedItem.id); // ✅ todo의 타입 명시
+    if (index !== -1 && typeof response === "object") {
+      todoList.value[index] = { ...todoList.value[index], ...response };
     }
   } catch (error) {
     console.error('Failed to update todo:', error);
@@ -119,13 +122,14 @@ const cancel = () => {
 const confirmDeleteTodo = async (targetId: number) => {
   try {
     await deleteTodo(targetId);
-    todoList.value = todoList.value.filter((todo) => todo.id !== targetId);
+    todoList.value = todoList.value.filter((todo: TodoType) => todo.id !== targetId); // ✅ todo의 타입 명시
     showDeleteDialog.value = false;
   } catch (error) {
     console.error('Failed to delete todo:', error);
   }
 };
 </script>
+
 <style>
 .no-scrollbar {
   overflow: hidden;
