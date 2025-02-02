@@ -1,23 +1,34 @@
 <template>
     <v-list>
-        <v-list-item class="mb-6" border height="60" lines="two" rounded v-for="item in filteredTodoList"
+        <v-list-item class="todo-item mb-2" border height="60" lines="one" rounded v-for="item in filteredTodoList"
             :key="item.id">
-            <!-- 수정 모드 -->
-            <template v-if="item.isEditing">
-                <input type="text" :value="item.title" @blur="cancelEdit(item)" @keydown.enter="saveEdit(item, $event)"
-                    class="edit-input center-aligned" />
-            </template>
+            <v-row>
+                <!-- ✅ 체크박스 (맨 왼쪽, 수직 & 수평 중앙 정렬) -->
+                <v-col cols="2" class="d-flex align-center justify-center">
+                    <v-checkbox v-model="selectedItems" :value="item.id" density="compact"
+                        class="d-flex align-center"></v-checkbox>
+                </v-col>
 
-            <!-- 일반 모드 -->
-            <template v-else>
-                <v-list-item-title :class="{ completed: item.completed }" @dblclick="startEditing(item)">
-                    {{ item.title }}
-                </v-list-item-title>
-                <v-list-item-action append class="d-flex justify-end">
-                    <v-icon @click="toggleComplete(item)">mdi-check-circle</v-icon>
+
+                <!-- ✅ 제목 (가운데) -->
+                <v-col cols="7" class="d-flex align-center">
+                    <template v-if="item.isEditing">
+                        <input type="text" :value="item.title" @blur="cancelEdit(item)"
+                            @keydown.enter="saveEdit(item, $event)" class="edit-input center-aligned" />
+                    </template>
+                    <template v-else>
+                        <v-list-item-title :class="{ completed: item.completed }" @dblclick="startEditing(item)">
+                            {{ item.title }}
+                        </v-list-item-title>
+                    </template>
+                </v-col>
+
+                <!-- ✅ 아이콘 (토글, 삭제 - 한 줄로 정렬) -->
+                <v-col cols="3" class="icon-container">
+                    <v-icon @click="toggleComplete(item)" class="mr-2">mdi-check-circle</v-icon>
                     <v-icon @click="handleDelete(item.id, item.title)">mdi-delete</v-icon>
-                </v-list-item-action>
-            </template>
+                </v-col>
+            </v-row>
         </v-list-item>
 
         <v-list-item class="progress-bar" height="50" lines="one" align="center">
@@ -25,15 +36,21 @@
                 진도율: {{ completedCount }}/{{ totalCount }} ({{ progress }}%)
             </v-list-item-title>
         </v-list-item>
+
+        <!-- ✅ 버튼 2개 추가 -->
+        <v-list-item class="d-flex justify-center">
+            <v-btn color="red" @click="deleteAllTodos">전체 삭제</v-btn>
+            <v-btn color="blue" class="ml-4" @click="deleteSelectedTodos" :disabled="selectedItems.length === 0">
+                선택 삭제 ({{ selectedItems.length }})
+            </v-btn>
+        </v-list-item>
     </v-list>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, defineProps, defineEmits, watch } from "vue";
 import { updateTodo, deleteTodo } from '../services/api';
 import type { TodoType } from '../interfaces/Todod';
-import { defineProps, defineEmits } from 'vue';
-import { watch } from 'vue';
 
 // Props 정의
 const props = defineProps({
@@ -45,6 +62,29 @@ const props = defineProps({
 
 // Emits 정의
 const emit = defineEmits(["updateTodo", "handleDelete", "updateProgress"]);
+
+// ✅ 선택한 항목 ID 저장하는 배열
+const selectedItems = ref<number[]>([]);
+
+// ✅ 전체 삭제 기능
+const deleteAllTodos = async () => {
+    for (const item of props.filteredTodoList) {
+        await deleteTodo(item.id);
+        emit("handleDelete", item.id, item.title);
+    }
+};
+
+// ✅ 선택 삭제 기능
+const deleteSelectedTodos = async () => {
+    for (const id of selectedItems.value) {
+        const item = props.filteredTodoList.find((todo) => todo.id === id);
+        if (item) {
+            await deleteTodo(id);
+            emit("handleDelete", id, item.title);
+        }
+    }
+    selectedItems.value = []; // 삭제 후 선택 목록 초기화
+};
 
 // 수정 시작 함수
 const startEditing = (item: TodoType) => {
@@ -108,18 +148,35 @@ const totalCount = computed(() => {
 // 진도율 계산
 const progress = computed(() => totalCount.value ? Math.round((completedCount.value / totalCount.value) * 100) : 0);
 
-// const completedStates = computed(() => props.filteredTodoList.map((item) => item.completed));
-
 watch(progress, (newProgress) => {
     emit("updateProgress", newProgress);
 });
-
-
-
-
 </script>
 
 <style scoped>
+.todo-item {
+    /* display: flex; */
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px;
+    background: white;
+    border-radius: 8px;
+}
+
+/* ✅ 체크박스 수직 및 수평 중앙 정렬 */
+/* .checkbox-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+} */
+
+/* ✅ 아이콘을 한 줄로 정렬 */
+.icon-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
 .completed {
     color: rgb(243, 83, 83);
     text-decoration: line-through;
@@ -132,19 +189,21 @@ watch(progress, (newProgress) => {
 }
 
 .edit-input {
-    width: 80%;
-    padding: 4px;
+    width: 100%;
+    padding: 6px;
     font-size: 16px;
-    border: none;
+    border: 1px solid #ccc;
     outline: none;
     text-align: center;
-    margin: 0 auto;
     display: block;
+    border-radius: 4px;
 }
 
-.center-aligned {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+.v-btn {
+    min-width: 120px;
+}
+
+.mr-2 {
+    margin-right: 8px;
 }
 </style>
